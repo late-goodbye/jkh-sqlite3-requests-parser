@@ -4,6 +4,16 @@ import xlrd
 from xlrd import XLRDError
 
 
+def databaseReader(database_name: str):
+    try:
+        conn = sqlite3.connect('{}.db'.format(database_name))
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM input_data')
+    except:
+        print("Something wrong: {}".format(sys.exc_info()[0]))
+    for row in cursor:
+        yield row
+
 def fill_database(
         database_name: str,
         source_name: str='test_sample',
