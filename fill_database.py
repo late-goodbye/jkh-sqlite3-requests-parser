@@ -46,11 +46,6 @@ def fill_database(
             cursor.execute("""
                 INSERT INTO input_data VALUES (?, ?, ?, ?, ?)
             """, row_data)
-            if row == 10:
-                cursor.execute("""
-                    SELECT * FROM input_data where house='16А'
-                """)
-                print(cursor.fetchall())
         conn.commit()
         conn.close()
         return True
@@ -69,6 +64,5 @@ def fill_database(
         return False
     except:
         print("Something wrong during filling the database: {}".format(
-            sys.exc_info()[0]
-        ))
+            sys.exc_info()[0]))
         return False
