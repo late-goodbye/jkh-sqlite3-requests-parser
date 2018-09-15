@@ -18,6 +18,8 @@ class DatabaseHandler:
             self.cursor.execute('SELECT * FROM input_data')
             for row in self.cursor:
                 yield row
+        except (KeyboardInterrupt, GeneratorExit):
+            print('Work finished.')
         except:
             print("Something wrong: {}".format(sys.exc_info()[0]))
 
