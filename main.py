@@ -3,19 +3,22 @@ import requests
 import re
 import time
 from bs4 import BeautifulSoup
-from database_handler import fill_database
-from database_handler import databaseReader
+from database_handler import DatabaseHandler
 
 
 def run():
-    database_name = 'test'
-    fill_database(database_name)
+    dh = DatabaseHandler('database')
+    dh.fill_database()
     while True:
-        database_reader = databaseReader(database_name)
-        for house in database_reader:
-            print(house)
-            time.sleep(5)
-
+        try:
+            dr = dh.databaseReader()
+            for house in dr:
+                print(house)
+                time.sleep(2)
+        except KeyboardInterrupt:
+            print('\nBye.')
+            dh.close_connection()
+            break
 
 if __name__ == '__main__':
     run()
