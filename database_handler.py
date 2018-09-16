@@ -42,9 +42,9 @@ class DatabaseHandler:
     def insert_result(self, result):
         self.cursor.execute("""
             INSERT INTO result_data VALUES (
-                
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
-        """)
+        """, result)
 
     def close_connection(self):
         self.conn.close()
