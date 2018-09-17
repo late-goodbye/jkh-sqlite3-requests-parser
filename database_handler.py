@@ -75,11 +75,11 @@ class DatabaseHandler:
         self.cursor.execute("""
             SELECT * FROM result_data
         """)
-        print(self.cursor.fetchall())
+        # print(self.cursor.fetchall())
         self.cursor.execute("""
             SELECT * FROM wall_materials
         """)
-        print(self.cursor.fetchall())
+        # print(self.cursor.fetchall())
 
 
     def close_connection(self):
@@ -134,12 +134,16 @@ class DatabaseHandler:
 
     def count_brick_houses(self):
         self.cursor.execute("""
-            SELECT count(1) FROM input_data
+            SELECT region, count(1) FROM input_data
             INNER JOIN result_data ON input_data.result_id = result_data.id
             INNER JOIN wall_materials ON wall_materials.result_id = result_data.id
             WHERE material = 'кирпичные'
+            GROUP BY region
         """)
-        print('Number of brick houses: {}\n'.format(self.cursor.fetchone()))
+        print('Number of brick houses:')
+        for row in self.cursor.fetchall():
+            print('{}: {}'.format(row[0], row[1]))
+        print()
 
     def fill_database(self, source_name: str='test_sample'):
         """
@@ -163,8 +167,8 @@ class DatabaseHandler:
             workbook = xlrd.open_workbook('{}.xlsx'.format(source_name))
             worksheet = workbook.sheet_by_index(0)
 
-            # for row in range(1, worksheet.nrows):
-            for row in range(1, 10):
+            for row in range(1, worksheet.nrows):
+            # for row in range(1, 10):
                 # 2, 4, 6, 7, 8 is a region, a city, a street, a house, and a corpus
                 # columns respectively
                 row_data = tuple(
