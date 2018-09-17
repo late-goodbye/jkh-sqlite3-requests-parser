@@ -7,7 +7,6 @@ from xlrd import XLRDError
 
 class DatabaseHandler:
     def __init__(self, database_name: str):
-        self.request_count = 0
         self.database_name = database_name
         self.conn = sqlite3.connect('{}.db'.format(self.database_name))
         self.cursor = self.conn.cursor()
@@ -23,8 +22,7 @@ class DatabaseHandler:
                 house_type text,
                 is_wreck integer,
                 cadaster_number text,
-                overlapping_type text,
-                wall_material text)
+                overlapping_type text)
             """)
         self.cursor.execute('DROP TABLE IF EXISTS input_data')
         self.cursor.execute("""
@@ -39,20 +37,35 @@ class DatabaseHandler:
                 result_id integer,
                 FOREIGN KEY (result_id) REFERENCES result_data(id))
             """)
+        self.cursor.execute('DROP TABLE IF EXISTS wall_materials')
+        self.cursor.execute("""
+            CREATE TABLE wall_materials (
+                result_id integer,
+                material text,
+                FOREIGN KEY (result_id) REFERENCES result_data(id)
+            )
+        """)
 
     def insert_result(self, result):
         self.cursor.execute("""
             INSERT INTO result_data (year, stages, last_change, series,
                 building_type, house_type, is_wreck, cadaster_number,
-                overlapping_type, wall_material)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, result[:-1])
+                overlapping_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, result[:-2])
         # print("row_id = {}".format(result[-1]))
+        self.cursor.execute('SELECT last_insert_rowid()')
+        id = self.cursor.fetchone()[0]
         self.cursor.execute("""
             UPDATE input_data
-            SET result_id=last_insert_rowid()
+            SET result_id={}
             WHERE id={}
-        """.format(result[-1]))
+        """.format(id, result[-1]))
+        for material_name in result[-2].split(','):
+            self.cursor.execute("""
+                INSERT INTO wall_materials (result_id, material)
+                VALUES ({}, ?)
+            """.format(id), (material_name.strip().lower(), ))
         self.conn.commit()
 
         self.cursor.execute("""
@@ -62,8 +75,11 @@ class DatabaseHandler:
         self.cursor.execute("""
             SELECT * FROM result_data
         """)
-        # print(self.cursor.fetchall())
-
+        print(self.cursor.fetchall())
+        self.cursor.execute("""
+            SELECT * FROM wall_materials
+        """)
+        print(self.cursor.fetchall())
 
 
     def close_connection(self):
@@ -90,8 +106,6 @@ class DatabaseHandler:
                 FROM input_data
                 WHERE was_not_found < 3 AND was_not_found > -1
             """)
-            if not self.cursor:
-                print('Query list is empty...')
             for row in self.cursor:
                 yield row
         except (KeyboardInterrupt, GeneratorExit):
@@ -100,10 +114,6 @@ class DatabaseHandler:
             print("Something wrong: {}".format(sys.exc_info()[0]))
 
     def check_found(self):
-        self.request_count += 1
-
-        print('Request #{}'.format(self.request_count))
-        print('-' * 16)
         self.cursor.execute("""
             SELECT COUNT(1) FROM input_data
             WHERE was_not_found = -1
@@ -120,10 +130,16 @@ class DatabaseHandler:
             SELECT COUNT(1) FROM input_data
             WHERE was_not_found IN (0, 1, 2)
         """)
-        print("In query: {}\n".format(self.cursor.fetchone()[0]))
+        print("In query: {}".format(self.cursor.fetchone()[0]))
 
     def count_brick_houses(self):
-        pass
+        self.cursor.execute("""
+            SELECT count(1) FROM input_data
+            INNER JOIN result_data ON input_data.result_id = result_data.id
+            INNER JOIN wall_materials ON wall_materials.result_id = result_data.id
+            WHERE material = 'кирпичные'
+        """)
+        print('Number of brick houses: {}\n'.format(self.cursor.fetchone()))
 
     def fill_database(self, source_name: str='test_sample'):
         """
@@ -147,7 +163,8 @@ class DatabaseHandler:
             workbook = xlrd.open_workbook('{}.xlsx'.format(source_name))
             worksheet = workbook.sheet_by_index(0)
 
-            for row in range(1, worksheet.nrows):
+            # for row in range(1, worksheet.nrows):
+            for row in range(1, 10):
                 # 2, 4, 6, 7, 8 is a region, a city, a street, a house, and a corpus
                 # columns respectively
                 row_data = tuple(

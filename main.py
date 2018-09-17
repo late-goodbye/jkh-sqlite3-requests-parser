@@ -9,6 +9,7 @@ from database_handler import DatabaseHandler
 class Main:
 
     def __init__(self):
+        self.request_count = 0
         self.dh = DatabaseHandler('database')
         if not self.dh.fill_database():
             raise RuntimeError("Error during filling the database")
@@ -111,10 +112,15 @@ class Main:
 
         while True:
             try:
+                self.request_count += 1
+
+                print('Request #{}'.format(self.request_count))
+                print('-' * 16)
                 dr = self.dh.database_reader()
                 for addr in dr:
                     self.request_house_profile(addr)
                     self.dh.check_found()
+                    self.dh.count_brick_houses()
                     time.sleep(3)
             except KeyboardInterrupt:
                 print('\nBye.')
