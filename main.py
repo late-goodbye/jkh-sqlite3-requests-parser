@@ -119,10 +119,12 @@ class Main:
                 dr = self.dh.database_reader()
                 for addr in dr:
                     self.request_house_profile(addr)
-                    self.dh.check_found()
-                    self.dh.count_brick_houses()
                     time.sleep(3)
             except KeyboardInterrupt:
+                print('\nResults:')
+                self.dh.check_found()
+                self.dh.count_brick_houses()
+                self.dh.found_max_stages()
                 print('\nBye.')
                 self.dh.close_connection()
                 break

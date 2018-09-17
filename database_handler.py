@@ -145,6 +145,26 @@ class DatabaseHandler:
             print('{}: {}'.format(row[0], row[1]))
         print()
 
+    def found_max_stages(self):
+        print("Max stages per wall material per city: ")
+        self.cursor.execute("""
+            SELECT DISTINCT region, city FROM input_data
+        """)
+        cities = self.cursor.fetchall()
+        for city in cities:
+            self.cursor.execute("""
+                SELECT material, MAX(stages) FROM input_data
+                INNER JOIN result_data ON input_data.result_id = result_data.id
+                INNER JOIN wall_materials ON result_data.id = wall_materials.result_id
+                WHERE region = ? AND city = ?
+                GROUP BY material
+            """, city)
+            city_name = city[0].split()[0] if not city[1] else city[1]
+            print('{}:'.format(city_name))
+            for material in self.cursor.fetchall():
+                print('\t{}: {}'.format(material[0], material[1]))
+            print()
+
     def fill_database(self, source_name: str='test_sample'):
         """
         This method fills database by using an .xlsx file with sample data
