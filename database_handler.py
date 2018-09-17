@@ -1,5 +1,6 @@
 import sys
 import sqlite3
+from sqlite3 import OperationalError
 import xlrd
 from xlrd import XLRDError
 
@@ -9,24 +10,10 @@ class DatabaseHandler:
         self.database_name = database_name
         self.conn = sqlite3.connect('{}.db'.format(self.database_name))
         self.cursor = self.conn.cursor()
-        self.cursor.execute('DROP TABLE IF EXISTS input_data')
-        self.cursor.execute("""
-            CREATE TABLE input_data (
-                region text,
-                city text,
-                street text,
-                house text,
-                corpus text,
-                was_not_found integer)
-            """)
         self.cursor.execute('DROP TABLE IF EXISTS result_data')
         self.cursor.execute("""
             CREATE TABLE result_data (
-                region text,
-                city text,
-                street text,
-                house text,
-                corpus text,
+                id integer PRIMARY KEY,
                 year text,
                 stages integer,
                 last_change date,
@@ -38,29 +25,56 @@ class DatabaseHandler:
                 overlapping_type text,
                 wall_material text)
             """)
+        self.cursor.execute('DROP TABLE IF EXISTS input_data')
+        self.cursor.execute("""
+            CREATE TABLE input_data (
+                id integer PRIMARY KEY,
+                region text,
+                city text,
+                street text,
+                house text,
+                corpus text,
+                was_not_found integer,
+                result_id integer,
+                FOREIGN KEY (result_id) REFERENCES result_data(id))
+            """)
 
     def insert_result(self, result):
         self.cursor.execute("""
-            INSERT INTO result_data VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-        """, result)
+            INSERT INTO result_data (year, stages, last_change, series,
+                building_type, house_type, is_wreck, cadaster_number,
+                overlapping_type, wall_material)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, result[:-1])
+        print("row_id = {}".format(result[-1]))
+        self.cursor.execute("""
+            UPDATE input_data
+            SET result_id=last_insert_rowid()
+            WHERE id={}
+        """.format(result[-1]))
         self.conn.commit()
+
+        self.cursor.execute("""
+            SELECT * FROM input_data
+        """)
+        print(self.cursor.fetchone())
         self.cursor.execute("""
             SELECT * FROM result_data
         """)
         print(self.cursor.fetchall())
 
+
+
     def close_connection(self):
         self.conn.close()
 
-    def update(self, addr: tuple, was_found: bool):
+    def update(self, id: int, was_found: bool):
         format = -1 if was_found else addr[-1] + 1
         self.cursor.execute("""
             UPDATE input_data
             SET was_not_found={}
-            WHERE region=? AND city=? AND street=? AND house=? AND corpus=?
-        """.format(format), addr[:-1])
+            WHERE id = ?
+        """.format(format), (id, ))
         self.conn.commit()
 
     def remove(self, addr: tuple):
@@ -72,7 +86,8 @@ class DatabaseHandler:
     def databaseReader(self):
         try:
             self.cursor.execute("""
-                SELECT * FROM input_data
+                SELECT region, city, street, house, corpus, was_not_found, id
+                FROM input_data
                 WHERE was_not_found < 3 AND was_not_found > -1
             """)
             if not self.cursor:
@@ -84,9 +99,7 @@ class DatabaseHandler:
         except:
             print("Something wrong: {}".format(sys.exc_info()[0]))
 
-    def fill_database(
-            self,
-            source_name: str='test_sample'):
+    def fill_database(self, source_name: str='test_sample'):
         """
         This method fills database by using an .xlsx file with sample data
 
@@ -114,7 +127,9 @@ class DatabaseHandler:
                 row_data = tuple(
                     worksheet.cell_value(row, col) for col in [2, 4, 6, 7, 8])
                 self.cursor.execute("""
-                    INSERT INTO input_data VALUES (?, ?, ?, ?, ?, 0)
+                    INSERT INTO input_data (
+                        region, city, street, house, corpus, was_not_found
+                    ) VALUES (?, ?, ?, ?, ?, 0)
                 """, row_data)
             self.conn.commit()
             return True
@@ -130,6 +145,9 @@ class DatabaseHandler:
         except IndexError:
             print("Wrong index in sheet {} in file {}.xlsx.".format(
                 sheet_name, source_name))
+            return False
+        except OperationalError:
+            print("Wrong operation")
             return False
         except:
             print("Something wrong during filling the database: {}".format(

@@ -10,7 +10,8 @@ class Main:
 
     def __init__(self):
         self.dh = DatabaseHandler('database')
-        self.dh.fill_database()
+        if not self.dh.fill_database():
+            raise RuntimeError("Error during filling the database")
 
     def request_house_profile(self, addr: tuple, simple: bool=True):
 
@@ -25,8 +26,8 @@ class Main:
             print('{} {} {} {} {} {}'.format(*addr))
             if m:
                 self.dh.insert_result(
-                    addr[:-1] + self.request_house_info(m.group(0)))
-                self.dh.update(addr, was_found=True)
+                    self.request_house_info(m.group(0)) + (addr[-1], ))
+                self.dh.update(addr[-1], was_found=True)
                 print('{}, {}, {}, {}, {}, {} was found'.format(*addr))
             # elif addr[-1] == 1:
             #     print('{}, {}, {}, {}, {}, {} was not found ' \
