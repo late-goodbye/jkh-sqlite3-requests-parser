@@ -93,12 +93,6 @@ class DatabaseHandler:
         """.format(code), (id, ))
         self.conn.commit()
 
-    def remove(self, addr: tuple):
-        self.cursor.execute("""
-            DELETE FROM input_data
-            WHERE region=? AND city=? AND street=? AND house=? AND corpus=?
-        """, addr[:-1])
-
     def database_reader(self):
         try:
             self.cursor.execute("""
@@ -140,9 +134,9 @@ class DatabaseHandler:
             WHERE material = 'кирпичные'
             GROUP BY region
         """)
-        print('Number of brick houses:')
+        print('\nNumber of brick houses:')
         for row in self.cursor.fetchall():
-            print('{}: {}'.format(row[0], row[1]))
+            print('\t{}: {}'.format(row[0], row[1]))
         print()
 
     def found_max_stages(self):
@@ -160,9 +154,9 @@ class DatabaseHandler:
                 GROUP BY material
             """, city)
             city_name = city[0].split()[0] if not city[1] else city[1]
-            print('{}:'.format(city_name))
+            print('\t{}:'.format(city_name))
             for material in self.cursor.fetchall():
-                print('\t{}: {}'.format(material[0], material[1]))
+                print('\t\t{}: {}'.format(material[0], material[1]))
             print()
 
     def fill_database(self, source_name: str='test_sample'):
@@ -188,7 +182,6 @@ class DatabaseHandler:
             worksheet = workbook.sheet_by_index(0)
 
             for row in range(1, worksheet.nrows):
-            # for row in range(1, 10):
                 # 2, 4, 6, 7, 8 is a region, a city, a street, a house, and a corpus
                 # columns respectively
                 row_data = tuple(

@@ -20,32 +20,18 @@ class Main:
             url = ('https://www.reformagkh.ru/search/houses?query='
                 '{}+{}+{}+{}+{}&mh=on'.format(*addr)) \
                 .replace('.0', '').replace(' ', '+')
-            # print(url)
             r = requests.get(url)
             while '403' in str(r):
                 print('Connection refused. Wait for 30 sec')
                 time.sleep(30)
             else:
                 m = re.search(r'/myhouse/profile/view/[0-9]+', r.text)
-                # print('{} {} {} {} {} {}'.format(*addr))
                 if m:
                     self.dh.insert_result(
                         self.request_house_info(m.group(0)) + (addr[-1], ))
                     self.dh.update(addr[-1], code=-1)
                 else:
                     self.dh.update(addr[-1], code=addr[-2] + 1)
-                    # print('{}, {}, {}, {}, {}, {} was found'.format(*addr))
-                # elif addr[-1] == 1:
-                #     print('{}, {}, {}, {}, {}, {} was not found ' \
-                #         '(the second try)'.format(*addr))
-                #     self.dh.insert_back(addr)
-                # elif addr[-1] == 2:
-                #     print('{}, {}, {}, {}, {}, {} was not found three times ' \
-                #         'and removed'.format(*addr))
-                #     self.dh.remove(addr)
-                # else:
-                    # self.dh.insert_back(addr)
-                    # print('{}, {}, {}, {}, {}, {} was not found'.format(*addr))
 
     def request_house_info(self, profile_url: str) -> tuple:
         url = 'https://www.reformagkh.ru{}'.format(profile_url)
