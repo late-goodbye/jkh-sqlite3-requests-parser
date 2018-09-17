@@ -2,7 +2,6 @@ import sqlite3
 import requests
 import re
 import time
-from bs4 import BeautifulSoup
 from database_handler import DatabaseHandler
 
 
