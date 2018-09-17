@@ -45,16 +45,22 @@ class DatabaseHandler:
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
         """, result)
+        self.conn.commit()
+        self.cursor.execute("""
+            SELECT * FROM result_data
+        """)
+        print(self.cursor.fetchall())
 
     def close_connection(self):
         self.conn.close()
 
-    def insert_back(self, addr: tuple):
+    def update(self, addr: tuple, was_found: bool):
+        format = -1 if was_found else addr[-1] + 1
         self.cursor.execute("""
             UPDATE input_data
             SET was_not_found={}
             WHERE region=? AND city=? AND street=? AND house=? AND corpus=?
-        """.format(addr[-1] + 1), addr[:-1])
+        """.format(format), addr[:-1])
         self.conn.commit()
 
     def remove(self, addr: tuple):
@@ -65,7 +71,10 @@ class DatabaseHandler:
 
     def databaseReader(self):
         try:
-            self.cursor.execute('SELECT * FROM input_data')
+            self.cursor.execute("""
+                SELECT * FROM input_data
+                WHERE was_not_found < 3 AND was_not_found > -1
+            """)
             if not self.cursor:
                 print('Query list is empty...')
             for row in self.cursor:

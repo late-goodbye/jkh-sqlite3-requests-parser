@@ -24,24 +24,21 @@ class Main:
             m = re.search(r'/myhouse/profile/view/[0-9]+', r.text)
             print('{} {} {} {} {} {}'.format(*addr))
             if m:
-                # self.dh.insert_result(
-                    # addr + self.request_house_info(m.group(0)))
-                self.request_house_info(m.group(0))
-                self.dh.remove(addr)
-                print('{}, {}, {}, {}, {}, {} removed from query list ' \
-                    'due to it was found'.format(*addr))
-            elif addr[-1] == 1:
-                print('{}, {}, {}, {}, {}, {} was not found ' \
-                    '(the second try)'.format(*addr))
-                self.dh.insert_back(addr)
-            elif addr[-1] == 2:
-                print('{}, {}, {}, {}, {}, {} was not found three times ' \
-                    'and removed'.format(*addr))
-                self.dh.remove(addr)
+                self.dh.insert_result(
+                    addr[:-1] + self.request_house_info(m.group(0)))
+                self.dh.update(addr, was_found=True)
+                print('{}, {}, {}, {}, {}, {} was found'.format(*addr))
+            # elif addr[-1] == 1:
+            #     print('{}, {}, {}, {}, {}, {} was not found ' \
+            #         '(the second try)'.format(*addr))
+            #     self.dh.insert_back(addr)
+            # elif addr[-1] == 2:
+            #     print('{}, {}, {}, {}, {}, {} was not found three times ' \
+            #         'and removed'.format(*addr))
+            #     self.dh.remove(addr)
             else:
-                self.dh.insert_back(addr)
-                print('{}, {}, {}, {}, {}, {} was not found ' \
-                    '(the first try)'.format(*addr))
+                # self.dh.insert_back(addr)
+                print('{}, {}, {}, {}, {}, {} was not found'.format(*addr))
 
     def request_house_info(self, profile_url: str) -> tuple:
         url = 'https://www.reformagkh.ru{}'.format(profile_url)
@@ -59,6 +56,7 @@ class Main:
         ).group('stages').strip()
         print(stages)
 
+        # TODO change date format
         last_change = ' '.join(re.search(
             r'Последнее изменение анкеты.*?' \
             r'<span class="black_text">(?P<last_change>.*?)</span>', text
