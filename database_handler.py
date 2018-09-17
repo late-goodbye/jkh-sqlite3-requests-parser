@@ -53,7 +53,6 @@ class DatabaseHandler:
                 overlapping_type)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, result[:-2])
-        # print("row_id = {}".format(result[-1]))
         self.cursor.execute('SELECT last_insert_rowid()')
         id = self.cursor.fetchone()[0]
         self.cursor.execute("""
@@ -67,20 +66,6 @@ class DatabaseHandler:
                 VALUES ({}, ?)
             """.format(id), (material_name.strip().lower(), ))
         self.conn.commit()
-
-        self.cursor.execute("""
-            SELECT * FROM input_data
-        """)
-        # print(self.cursor.fetchone())
-        self.cursor.execute("""
-            SELECT * FROM result_data
-        """)
-        # print(self.cursor.fetchall())
-        self.cursor.execute("""
-            SELECT * FROM wall_materials
-        """)
-        # print(self.cursor.fetchall())
-
 
     def close_connection(self):
         self.conn.close()
